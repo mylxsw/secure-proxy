@@ -1,0 +1,12 @@
+[Unit]
+Description=secure proxy service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/secure-proxy --conf /etc/secure-proxy.yaml
+ExecStop=/bin/kill -s TERM $MAINPID
+Restart=on-failure
+RestartSec=42s
+
+[Install]
+WantedBy=multi-user.target

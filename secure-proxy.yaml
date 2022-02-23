@@ -1,0 +1,73 @@
+listen: 127.0.0.1:8080
+auth_type: ldap
+client_ip_header: X-Real-IP
+#log_path: /var/log/secure-proxy-%s.log
+
+users:
+  ignore_account_suffix: "@example.com"
+  ldap:
+    - account: CN=guanyiyao,CN=Users,DC=example,DC=com
+      groups:
+        - admin
+        - devops
+    - account: CN=liupeng,CN=Users,DC=example,DC=com
+      groups:
+        - devops
+  local:
+    - name: 张三
+      account: "zhansan"
+      password: $2a$10$L4tAaN9jLZZV4VCYtHbuKO8gTK8HRPAZU3sGXESWguiOobvMOvuNW
+      # algo 支持 plain(默认明文), bcrypt, base64
+      algo: bcrypt
+
+backends:
+  - host: prometheus.example.com
+    upstream: http://127.0.0.1:9090
+    privilege: private
+    groups:
+      - devops
+  - host: consul.example.com
+    upstream: http://127.0.0.1:8500
+    privilege: private
+    groups:
+      - CN=devops,DC=example,DC=com
+  - host: hdfs.example.com
+    upstream: http://127.0.0.1:50070
+    privilege: private
+    groups:
+      - CN=dev,DC=example,DC=com
+  - host: spark.example.com
+    upstream: http://127.0.0.1:8080
+    privilege: private
+    groups:
+      - CN=dev,DC=example,DC=com
+  - host: pinpoint.example.com
+    upstream: http://127.0.0.1:8079
+    privilege: private
+    groups:
+      - CN=devops,DC=example,DC=com
+  - host: kibana.example.com
+    upstream: http://127.0.0.1:5601
+    privilege: private
+    groups:
+      - CN=devops,DC=example,DC=com
+      - CN=dev,DC=example,DC=com
+
+session:
+  hash_key: oxjsWLzBv8l4jU4RuwEbC/zw+UjqgPHg8aqY6+RPYbc=
+  block_key: H+3qpeM/vn1FN1R05Vy3HvLDYOaJatKqNWp7/8bXvyg=
+  cookie_name: secure-proxy-auth
+  cookie_domain: .example.com
+
+ldap:
+  url: ldap://127.0.0.1:389
+  base_dn: dc=example,dc=com
+  username: admin
+  password: admin
+  display_name: displayName
+  uid: sAMAccountName
+  user_filter: CN=Users,DC=example,DC=com
+
+redis:
+  addr: 127.0.0.1:6379
+#  password: "111111"
