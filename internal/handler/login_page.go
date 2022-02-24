@@ -64,7 +64,7 @@ var loginPage = `
     <div class="alert alert-danger" role="alert">{{ .error }}</div>
     {{- end }}
 
-    {{- if eq .auth "misc" }}
+    {{- if eq .auth "ldap_local" }}
     <div class="form-floating">
       <select class="form-control" name="k0" id="k0">
         <option value="ldap" {{ if eq .k0 "ldap" }}selected{{ end }}>内部员工</option>

@@ -63,13 +63,13 @@ func (handler *AuthHandler) buildLoginHandler() func(rw http.ResponseWriter, r *
 		}
 
 		// 不同的鉴权类型，对账号的格式要求不同
-		// misc：必须提供 k0(userType) 请求参数，可选值为 local|ldap
+		// ldap_local：必须提供 k0(userType) 请求参数，可选值为 local|ldap
 		// ldap：忽略用户请求的 k0(userType) 参数，强制设置为 ldap
 		// 其它：忽略用户请求的 k0(userType) 参数，强制设置为 local
 		switch handler.conf.AuthType {
 		case "ldap":
 			userType = "ldap"
-		case "misc":
+		case "ldap_local":
 			if !str.In(userType, []string{"local", "ldap"}) {
 				http.Redirect(rw, r, fmt.Sprintf("/secure-proxy/auth?k1=%s&k0=%s&error=%s", username, userType, "请求参数有误"), http.StatusSeeOther)
 				return
@@ -86,9 +86,9 @@ func (handler *AuthHandler) buildLoginHandler() func(rw http.ResponseWriter, r *
 			return
 		}
 
-		// misc 类型的鉴权模式下，用户名格式为 account=authType:username，后端鉴权模块会根据 authType 判断当前鉴权方式
+		// ldap_local 类型的鉴权模式下，用户名格式为 account=authType:username，后端鉴权模块会根据 authType 判断当前鉴权方式
 		account := username
-		if handler.conf.AuthType == "misc" {
+		if handler.conf.AuthType == "ldap_local" {
 			account = fmt.Sprintf("%s:%s", userType, username)
 		}
 

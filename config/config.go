@@ -30,7 +30,7 @@ type Config struct {
 // populateDefault 填充默认值
 func (conf Config) populateDefault() Config {
 	if conf.AuthType == "" {
-		conf.AuthType = "misc"
+		conf.AuthType = "ldap+local"
 	}
 
 	if conf.Session.CookieName == "" {
@@ -78,8 +78,8 @@ func (conf Config) validate() error {
 		return fmt.Errorf("session.max_age must be positive")
 	}
 
-	if !str.In(conf.AuthType, []string{"misc", "ldap", "local"}) {
-		return fmt.Errorf("invalid auth_type: must be one of misc|local|ldap")
+	if !str.In(conf.AuthType, []string{"ldap+local", "ldap", "local"}) {
+		return fmt.Errorf("invalid auth_type: must be one of ldap_local|local|ldap")
 	}
 
 	for _, backend := range conf.Backends {

@@ -1,4 +1,4 @@
-package misc
+package ldap_local
 
 import (
 	"strings"
@@ -17,7 +17,7 @@ type Auth struct {
 }
 
 func New(ldapConf *config.LDAP, localConf *config.Users) auth.Auth {
-	return &Auth{logger: log.Module("auth:misc"), ldapAuth: ldap.New(ldapConf, localConf), localAuth: local.New(localConf)}
+	return &Auth{logger: log.Module("auth:ldap_local"), ldapAuth: ldap.New(ldapConf, localConf), localAuth: local.New(localConf)}
 }
 
 func (provider *Auth) GetUser(username string) (*auth.AuthedUser, error) {

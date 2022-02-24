@@ -1,4 +1,4 @@
-package misc
+package ldap_local
 
 import (
 	"github.com/mylxsw/asteria/log"
@@ -12,10 +12,9 @@ type Provider struct{}
 func (p Provider) Register(cc infra.Binder) {
 	cc.MustSingletonOverride(New)
 
-	log.Debugf("provider internal.auth.misc loaded")
-
+	log.Debugf("provider internal.auth.ldap+local loaded")
 }
 
 func (p Provider) ShouldLoad(config *config.Config) bool {
-	return str.InIgnoreCase(config.AuthType, []string{"misc"})
+	return str.InIgnoreCase(config.AuthType, []string{"ldap+local"})
 }

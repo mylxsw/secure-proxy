@@ -12,8 +12,8 @@ import (
 	"github.com/mylxsw/glacier/starter/application"
 	"github.com/mylxsw/secure-proxy/config"
 	"github.com/mylxsw/secure-proxy/internal/auth/ldap"
+	"github.com/mylxsw/secure-proxy/internal/auth/ldap_local"
 	"github.com/mylxsw/secure-proxy/internal/auth/local"
-	"github.com/mylxsw/secure-proxy/internal/auth/misc"
 	"github.com/mylxsw/secure-proxy/internal/handler"
 	"github.com/mylxsw/secure-proxy/internal/secure"
 	"github.com/mylxsw/secure-proxy/internal/store"
@@ -45,7 +45,7 @@ func main() {
 		store.Provider{},
 		ldap.Provider{},
 		local.Provider{},
-		misc.Provider{},
+		ldap_local.Provider{},
 		handler.Provider{},
 	)
 
