@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"github.com/mylxsw/secure-proxy/internal/store"
 	"net/http"
 	"strings"
 	"time"
@@ -11,7 +12,6 @@ import (
 	"github.com/mylxsw/secure-proxy/config"
 	"github.com/mylxsw/secure-proxy/internal/auth"
 	"github.com/mylxsw/secure-proxy/internal/secure"
-	"github.com/mylxsw/secure-proxy/internal/store"
 )
 
 type AuthHandler struct {
@@ -19,11 +19,11 @@ type AuthHandler struct {
 	logger        log.Logger
 	cookieManager *secure.CookieManager
 	author        auth.Auth
-	store         *store.Manager
+	store         store.Store
 }
 
-func NewAuthHandler(conf *config.Config, author auth.Auth, cookieManager *secure.CookieManager, storeManager *store.Manager, logger log.Logger) *AuthHandler {
-	return &AuthHandler{conf: conf, author: author, cookieManager: cookieManager, store: storeManager, logger: logger}
+func NewAuthHandler(conf *config.Config, author auth.Auth, cookieManager *secure.CookieManager, s store.Store, logger log.Logger) *AuthHandler {
+	return &AuthHandler{conf: conf, author: author, cookieManager: cookieManager, store: s, logger: logger}
 }
 
 func (handler *AuthHandler) RegisterHandlers() {
@@ -69,7 +69,7 @@ func (handler *AuthHandler) buildLoginHandler() func(rw http.ResponseWriter, r *
 		switch handler.conf.AuthType {
 		case "ldap":
 			userType = "ldap"
-		case "ldap_local":
+		case "ldap+local":
 			if !str.In(userType, []string{"local", "ldap"}) {
 				http.Redirect(rw, r, fmt.Sprintf("/secure-proxy/auth?k1=%s&k0=%s&error=%s", username, userType, "请求参数有误"), http.StatusSeeOther)
 				return
@@ -88,7 +88,7 @@ func (handler *AuthHandler) buildLoginHandler() func(rw http.ResponseWriter, r *
 
 		// ldap_local 类型的鉴权模式下，用户名格式为 account=authType:username，后端鉴权模块会根据 authType 判断当前鉴权方式
 		account := username
-		if handler.conf.AuthType == "ldap_local" {
+		if handler.conf.AuthType == "ldap+local" {
 			account = fmt.Sprintf("%s:%s", userType, username)
 		}
 

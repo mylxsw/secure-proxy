@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"github.com/mylxsw/secure-proxy/internal/store"
 	"net"
 	"net/http"
 	"time"
@@ -12,7 +13,6 @@ import (
 	"github.com/mylxsw/secure-proxy/config"
 	"github.com/mylxsw/secure-proxy/internal/auth"
 	"github.com/mylxsw/secure-proxy/internal/secure"
-	"github.com/mylxsw/secure-proxy/internal/store"
 )
 
 type Provider struct{}
@@ -26,12 +26,12 @@ func (pro Provider) Register(binder infra.Binder) {
 }
 
 func (pro Provider) Daemon(ctx context.Context, resolver infra.Resolver) {
-	err := resolver.Resolve(func(conf *config.Config, listener net.Listener, gf graceful.Graceful, cookieManager *secure.CookieManager, storeManager *store.Manager, author auth.Auth) {
+	err := resolver.Resolve(func(conf *config.Config, listener net.Listener, gf graceful.Graceful, cookieManager *secure.CookieManager, s store.Store, author auth.Auth) {
 		// 创建 HTTP server
 		options := DefaultOptions(conf)
 		options.AuthHandler = cookieManager.BuildAuthHandler()
 
-		NewAuthHandler(conf, author, cookieManager, storeManager, log.Module("auth")).RegisterHandlers()
+		NewAuthHandler(conf, author, cookieManager, s, log.Module("auth")).RegisterHandlers()
 		NewProxyHandler(options, author, log.Module("proxy")).RegisterHandlers()
 
 		srv := &http.Server{}

@@ -3,12 +3,10 @@ package config
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"strings"
-
 	"github.com/mylxsw/go-utils/file"
 	"github.com/mylxsw/go-utils/str"
 	"gopkg.in/yaml.v2"
+	"io/ioutil"
 )
 
 // Config 系统配置
@@ -24,7 +22,13 @@ type Config struct {
 
 	Session Session `json:"session" yaml:"session,omitempty"`
 	LDAP    LDAP    `json:"ldap" yaml:"ldap,omitempty"`
-	Redis   Redis   `json:"redis" yaml:"redis,omitempty"`
+
+	Cache Cache `json:"cache" yaml:"cache"`
+}
+
+type Cache struct {
+	Driver string `json:"driver" yaml:"driver"`
+	Redis  Redis  `json:"redis,omitempty" yaml:"redis,omitempty"`
 }
 
 // populateDefault 填充默认值
@@ -54,12 +58,14 @@ func (conf Config) populateDefault() Config {
 		conf.LDAP.UID = "sAMAccountName"
 	}
 
-	if conf.Redis.Addr == "" {
-		conf.Redis.Addr = "127.0.0.1:6379"
+	if conf.Cache.Driver == "" {
+		conf.Cache.Driver = "memory"
 	}
 
-	if !strings.Contains(conf.Redis.Addr, ":") {
-		conf.Redis.Addr = fmt.Sprintf("%s:6379", conf.Redis.Addr)
+	if conf.Cache.Driver == "redis" {
+		if conf.Cache.Redis.Addr == "" {
+			conf.Cache.Redis.Addr = "127.0.0.1:6379"
+		}
 	}
 
 	return conf
@@ -80,6 +86,10 @@ func (conf Config) validate() error {
 
 	if !str.In(conf.AuthType, []string{"ldap+local", "ldap", "local"}) {
 		return fmt.Errorf("invalid auth_type: must be one of ldap_local|local|ldap")
+	}
+
+	if !str.In(conf.Cache.Driver, []string{"redis", "memory"}) {
+		return fmt.Errorf("invalid cache.driver: must be one of redis|memory")
 	}
 
 	for _, backend := range conf.Backends {

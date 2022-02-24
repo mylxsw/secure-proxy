@@ -64,8 +64,7 @@ func buildGenDefaultConfigCommand(name string) cli.Command {
 			conf.LDAP.Password = "admin"
 			conf.LDAP.BaseDN = "dc=example,dc=com"
 
-			conf.Redis.Addr = "127.0.0.1:6379"
-			conf.Redis.Addr = "redisPassword"
+			conf.Cache.Driver = "memory"
 
 			conf.ClientRealIPHeader = "X-Real-IP"
 			conf.Listen = "127.0.0.1:8080"

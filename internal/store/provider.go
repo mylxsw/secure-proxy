@@ -7,8 +7,8 @@ import (
 
 type Provider struct{}
 
-func (pro Provider) Register(binder infra.Binder) {
-	binder.MustSingletonOverride(New)
+func (Provider) Register(binder infra.Binder) {
+	binder.MustSingletonOverride(NewDefaultStore)
 
 	log.Debugf("provider internal.store loaded")
 }

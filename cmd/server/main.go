@@ -14,6 +14,8 @@ import (
 	"github.com/mylxsw/secure-proxy/internal/auth/ldap"
 	"github.com/mylxsw/secure-proxy/internal/auth/ldap_local"
 	"github.com/mylxsw/secure-proxy/internal/auth/local"
+	"github.com/mylxsw/secure-proxy/internal/cache/memory"
+	"github.com/mylxsw/secure-proxy/internal/cache/redis"
 	"github.com/mylxsw/secure-proxy/internal/handler"
 	"github.com/mylxsw/secure-proxy/internal/secure"
 	"github.com/mylxsw/secure-proxy/internal/store"
@@ -43,6 +45,8 @@ func main() {
 		config.Provider{},
 		secure.Provider{},
 		store.Provider{},
+		redis.Provider{},
+		memory.Provider{},
 		ldap.Provider{},
 		local.Provider{},
 		ldap_local.Provider{},

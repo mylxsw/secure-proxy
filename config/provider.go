@@ -9,7 +9,8 @@ type Provider struct{}
 
 func (pro Provider) Register(binder infra.Binder) {
 	binder.MustSingletonOverride(func(conf *Config) *LDAP { return &conf.LDAP })
-	binder.MustSingletonOverride(func(conf *Config) *Redis { return &conf.Redis })
+	binder.MustSingletonOverride(func(conf *Config) *Redis { return &conf.Cache.Redis })
+	binder.MustSingletonOverride(func(conf *Config) *Cache { return &conf.Cache })
 	binder.MustSingletonOverride(func(conf *Config) *Session { return &conf.Session })
 	binder.MustSingletonOverride(func(conf *Config) *Users { return &conf.Users })
 }
