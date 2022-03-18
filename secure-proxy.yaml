@@ -60,6 +60,7 @@ session:
   cookie_name: secure-proxy-auth
   # cookie_domain 留空则默认登录 Cookie 域为当前域名
   cookie_domain: .example.com
+  max_age: 86400 # 24H
 
 ldap:
   url: ldap://127.0.0.1:389

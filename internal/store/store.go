@@ -11,6 +11,7 @@ import (
 type Store interface {
 	UserCanLogin(userType string, account string) error
 	UserLoginAttempt(userType string, account string) error
+	UserSessionValidate(sessionID string, cb func() (bool, error)) (bool, error)
 }
 
 type defaultStore struct {
@@ -54,4 +55,28 @@ func (sm *defaultStore) UserLoginAttempt(userType string, account string) error 
 	}
 
 	return sm.cacheDriver.Expire(context.TODO(), fmt.Sprintf(UserLoginRateKey, userType, account), 10*time.Minute)
+}
+
+func (sm *defaultStore) UserSessionValidate(sessionID string, cb func() (bool, error)) (bool, error) {
+	cacheKey := fmt.Sprintf("secure-proxy:session:%s", sessionID)
+	val, err := sm.cacheDriver.Get(context.TODO(), cacheKey)
+	if err != nil {
+		return false, err
+	}
+
+	if val == "" {
+		valid, err := cb()
+		if err != nil {
+			return false, err
+		}
+
+		if valid {
+			_ = sm.cacheDriver.Set(context.TODO(), cacheKey, time.Now().Format(time.RFC3339))
+			_ = sm.cacheDriver.Expire(context.TODO(), cacheKey, 6*time.Hour)
+		}
+
+		return valid, err
+	}
+
+	return true, nil
 }

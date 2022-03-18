@@ -1,7 +1,6 @@
 package ldap
 
 import (
-	"errors"
 	"fmt"
 	"github.com/mylxsw/go-utils/str"
 	"time"
@@ -60,7 +59,7 @@ func (provider *Auth) getUser(username string, cb func(l *lp.Conn, user *auth.Au
 
 		// 514-禁用 512-启用
 		if sr.Entries[0].GetAttributeValue("userAccountControl") == "514" {
-			return nil, errors.New("LDAP 用户账户已禁用")
+			return nil, auth.ErrAccountDisabled
 		}
 
 		authedUser := provider.buildAuthedUserFromLDAPEntry(sr.Entries[0])

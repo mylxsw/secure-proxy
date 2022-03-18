@@ -60,7 +60,7 @@ func (sc *CookieManager) GetCookie(req *http.Request) (*config.UserAuthInfo, err
 	return &userAuthInfo, nil
 }
 
-func (sc *CookieManager) BuildAuthHandler() func(req *http.Request) (*config.UserAuthInfo, error) {
+func (sc *CookieManager) BuildAuthHandler(cb func(user *config.UserAuthInfo) (bool, error)) func(req *http.Request) (*config.UserAuthInfo, error) {
 	return func(req *http.Request) (*config.UserAuthInfo, error) {
 		userAuthInfo, err := sc.GetCookie(req)
 		if err != nil {
@@ -69,6 +69,17 @@ func (sc *CookieManager) BuildAuthHandler() func(req *http.Request) (*config.Use
 
 		if userAuthInfo == nil || userAuthInfo.Account == "" {
 			return nil, fmt.Errorf("user not login")
+		}
+
+		if cb != nil {
+			ok, err := cb(userAuthInfo)
+			if err != nil {
+				return nil, err
+			}
+
+			if !ok {
+				return nil, fmt.Errorf("user is not permit to access, may be user has been blocked")
+			}
 		}
 
 		return userAuthInfo, nil

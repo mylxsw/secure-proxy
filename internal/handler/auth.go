@@ -103,6 +103,7 @@ func (handler *AuthHandler) buildLoginHandler() func(rw http.ResponseWriter, r *
 		// 鉴权成功，完成用户登录设置
 		userAuthInfo := config.UserAuthInfo{
 			UserType:  authedUser.Type,
+			Username:  username,
 			Account:   authedUser.Account,
 			UUID:      authedUser.UUID,
 			Name:      authedUser.Name,

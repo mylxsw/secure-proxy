@@ -19,3 +19,4 @@ type AuthedUser struct {
 
 var ErrNoSuchUser = errors.New("user not found")
 var ErrInvalidPassword = errors.New("invalid password")
+var ErrAccountDisabled = errors.New("用户账户已禁用")
