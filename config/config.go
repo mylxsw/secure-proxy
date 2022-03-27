@@ -3,10 +3,11 @@ package config
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+
 	"github.com/mylxsw/go-utils/file"
 	"github.com/mylxsw/go-utils/str"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
 )
 
 // Config 系统配置
@@ -108,10 +109,17 @@ const (
 	BackendPrivilegePrivate = "private"
 )
 
+type Header struct {
+	Key   string `json:"key" yaml:"key"`
+	Value string `json:"value" yaml:"value"`
+}
+
 // Backend 后端服务配置
 type Backend struct {
 	Host     string `json:"host" yaml:"host"`
 	Upstream string `json:"upstream" yaml:"upstream"`
+	// RewriteHeader 重写 header 为设定的值
+	RewriteHeaders []Header `json:"rewrite_headers,omitempty" yaml:"rewrite_headers,omitempty"`
 	// Privilege 访问权限，默认为 private，只允许指定的 group/user 访问
 	Privilege string   `json:"privilege,omitempty" yaml:"privilege,omitempty"`
 	Groups    []string `json:"groups,omitempty" yaml:"groups,omitempty"`

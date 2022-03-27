@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/mylxsw/secure-proxy/config"
-	"github.com/mylxsw/secure-proxy/internal/auth"
 	"io/ioutil"
 	stdLog "log"
 	"net/http"
@@ -14,6 +12,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/mylxsw/secure-proxy/config"
+	"github.com/mylxsw/secure-proxy/internal/auth"
 
 	"github.com/mylxsw/asteria/log"
 	"github.com/mylxsw/go-utils/str"
@@ -66,10 +67,25 @@ func NewProxyHandler(option *ProxyOptions, author auth.Auth, logger log.Logger) 
 		proxy.ErrorLog = stdLog.New(LogWriter{logger: logger}, "", stdLog.Flags())
 
 		originalDirector := proxy.Director
+		host := backend.Host
+		rewriteHeaders := backend.RewriteHeaders
 		proxy.Director = func(req *http.Request) {
 			originalDirector(req)
 			req.Host = gateway.Host
-			req.Header.Add(OriginalHostHeader, backend.Host)
+			req.Header.Add(OriginalHostHeader, host)
+
+			for _, h := range rewriteHeaders {
+				if h.Key == "" {
+					continue
+				}
+
+				if h.Value == "" {
+					req.Header.Del(h.Key)
+				} else {
+					req.Header.Set(h.Key, h.Value)
+				}
+			}
+
 			option.Director(req)
 		}
 
