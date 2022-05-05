@@ -13,7 +13,7 @@ func (handler *AuthHandler) buildIndexPageHandler() func(rw http.ResponseWriter,
 
 		values := make(map[string]string)
 		values["auth"] = handler.conf.AuthType
-		for _, k := range []string{"k0", "k1", "k2", "error"} {
+		for _, k := range []string{"k0", "username", "password", "error"} {
 			values[k] = r.Form.Get(k)
 		}
 
@@ -75,12 +75,12 @@ var loginPage = `
     {{- end }}
 
     <div class="form-floating mt-3">
-      <input type="text" class="form-control" id="floatingInput" name="k1" value="{{ or .k1 "" }}" autocomplete="off" placeholder="">
+      <input type="text" class="form-control" id="floatingInput" name="username" value="{{ or .username "" }}" autocomplete="off" placeholder="">
       <label for="floatingInput">账号</label>
     </div>
 
     <div class="form-floating mt-3">
-      <input type="password" class="form-control" id="floatingPassword" name="k2" autocomplete="new-password">
+      <input type="password" class="form-control" id="floatingPassword" name="password" autocomplete="new-password">
       <label for="floatingPassword">密码</label>
     </div>
 

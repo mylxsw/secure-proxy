@@ -1,6 +1,6 @@
 listen: 127.0.0.1:8080
 # auth_type: ldap, local, ldap+local
-auth_type: ldap
+auth_type: local
 client_ip_header: X-Real-IP
 #log_path: /var/log/secure-proxy-%s.log
 
@@ -16,11 +16,13 @@ users:
         - devops
   local:
     - name: 张三
-      account: "zhansan"
+      account: "zhangsan"
       password: $2a$10$L4tAaN9jLZZV4VCYtHbuKO8gTK8HRPAZU3sGXESWguiOobvMOvuNW
       # algo 支持 plain(默认明文), bcrypt, base64
       algo: bcrypt
-
+    - name: 李四
+      account: "lisi"
+      password: "111111"
 backends:
   - host: prometheus.example.com
     upstream: http://127.0.0.1:9090
@@ -73,7 +75,7 @@ ldap:
 
 cache:
   # 缓存驱动，支持 redis，memory，默认为 memory
-  driver: redis
+  driver: memory
   redis:
     addr: 127.0.0.1:6379
 #    password: "111111"

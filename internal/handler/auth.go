@@ -49,8 +49,8 @@ func (handler *AuthHandler) buildLogoutHandler() func(rw http.ResponseWriter, r 
 func (handler *AuthHandler) buildLoginHandler() func(rw http.ResponseWriter, r *http.Request) {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		userType := r.FormValue("k0")
-		username := strings.TrimSpace(r.FormValue("k1"))
-		password := strings.TrimSpace(r.FormValue("k2"))
+		username := strings.TrimSpace(r.FormValue("username"))
+		password := strings.TrimSpace(r.FormValue("password"))
 
 		// 要忽略的账号 suffix
 		if handler.conf.Users.IgnoreAccountSuffix != "" {
@@ -58,7 +58,7 @@ func (handler *AuthHandler) buildLoginHandler() func(rw http.ResponseWriter, r *
 		}
 
 		if username == "" || password == "" {
-			http.Redirect(rw, r, fmt.Sprintf("/secure-proxy/auth?k1=%s&k0=%s&error=%s", username, userType, "用户名或密码不能为空"), http.StatusSeeOther)
+			http.Redirect(rw, r, fmt.Sprintf("/secure-proxy/auth?username=%s&k0=%s&error=%s", username, userType, "用户名或密码不能为空"), http.StatusSeeOther)
 			return
 		}
 
@@ -71,7 +71,7 @@ func (handler *AuthHandler) buildLoginHandler() func(rw http.ResponseWriter, r *
 			userType = "ldap"
 		case "ldap+local":
 			if !str.In(userType, []string{"local", "ldap"}) {
-				http.Redirect(rw, r, fmt.Sprintf("/secure-proxy/auth?k1=%s&k0=%s&error=%s", username, userType, "请求参数有误"), http.StatusSeeOther)
+				http.Redirect(rw, r, fmt.Sprintf("/secure-proxy/auth?username=%s&k0=%s&error=%s", username, userType, "请求参数有误"), http.StatusSeeOther)
 				return
 			}
 
@@ -82,7 +82,7 @@ func (handler *AuthHandler) buildLoginHandler() func(rw http.ResponseWriter, r *
 		// 用户登录请求安全检查，登录次数限制检查
 		if err := handler.store.UserCanLogin(userType, username); err != nil {
 			log.WithFields(log.Fields{"username": username, "userType": userType, "host": r.Host}).Warningf("user %s login failed: %v", username, err)
-			http.Redirect(rw, r, fmt.Sprintf("/secure-proxy/auth?k1=%s&k0=%s&error=%s", username, userType, err), http.StatusSeeOther)
+			http.Redirect(rw, r, fmt.Sprintf("/secure-proxy/auth?username=%s&k0=%s&error=%s", username, userType, err), http.StatusSeeOther)
 			return
 		}
 
@@ -96,7 +96,7 @@ func (handler *AuthHandler) buildLoginHandler() func(rw http.ResponseWriter, r *
 		if err != nil {
 			_ = handler.store.UserLoginAttempt(userType, username)
 			log.WithFields(log.Fields{"username": username, "userType": userType, "host": r.Host}).Warningf("user %s login failed: %v", username, err)
-			http.Redirect(rw, r, fmt.Sprintf("/secure-proxy/auth?k1=%s&k0=%s&error=用户名或密码错误", username, userType), http.StatusSeeOther)
+			http.Redirect(rw, r, fmt.Sprintf("/secure-proxy/auth?username=%s&k0=%s&error=用户名或密码错误", username, userType), http.StatusSeeOther)
 			return
 		}
 
