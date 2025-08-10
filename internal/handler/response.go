@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
+	"net"
 	"net/http"
 	"time"
 )
@@ -15,6 +17,9 @@ type ResponseWriter struct {
 	Body       []byte
 	StatusCode int
 	CreatedAt  time.Time
+
+	// originalWriter holds reference to the original ResponseWriter for hijacking support
+	originalWriter http.ResponseWriter
 }
 
 // Header implements http.ResponseWriter interface
@@ -50,4 +55,12 @@ func (rw *ResponseWriter) UnSerialize(data []byte) error {
 
 	rw.body = bytes.NewBuffer(rw.Body)
 	return nil
+}
+
+// Hijack implements http.Hijacker interface by delegating to the original writer
+func (rw *ResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if hijacker, ok := rw.originalWriter.(http.Hijacker); ok {
+		return hijacker.Hijack()
+	}
+	return nil, nil, http.ErrNotSupported
 }

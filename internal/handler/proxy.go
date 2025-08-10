@@ -105,11 +105,31 @@ func (ph *ProxyHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 	startTs := time.Now()
 
 	host := request.Host
-	targetResponse := &ResponseWriter{
-		Headers:    make(http.Header),
-		body:       bytes.NewBuffer([]byte{}),
-		StatusCode: 0,
-		CreatedAt:  time.Now(),
+
+	// Check if this is a protocol upgrade request (e.g., WebSocket)
+	// Look for Connection: Upgrade header and Upgrade header presence
+	connectionHeader := strings.ToLower(request.Header.Get("Connection"))
+	upgradeHeader := request.Header.Get("Upgrade")
+	isUpgradeRequest := strings.Contains(connectionHeader, "upgrade") && upgradeHeader != ""
+
+	// For upgrade requests, check if the original writer supports hijacking
+	if isUpgradeRequest {
+		if _, ok := writer.(http.Hijacker); !ok {
+			// Original writer doesn't support hijacking, return error
+			http.Error(writer, "WebSocket upgrade not supported by this server", http.StatusNotImplemented)
+			return
+		}
+	}
+
+	var targetResponse *ResponseWriter
+	if !isUpgradeRequest {
+		targetResponse = &ResponseWriter{
+			Headers:        make(http.Header),
+			body:           bytes.NewBuffer([]byte{}),
+			StatusCode:     0,
+			CreatedAt:      time.Now(),
+			originalWriter: writer,
+		}
 	}
 
 	var clientIP string
@@ -123,6 +143,10 @@ func (ph *ProxyHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 
 	defer func() {
 		if err := recover(); err != nil {
+			statusCode := 0
+			if targetResponse != nil {
+				statusCode = targetResponse.StatusCode
+			}
 			log.F(log.M{
 				"elapse":      time.Since(startTs).Microseconds(),
 				"host":        host,
@@ -131,14 +155,17 @@ func (ph *ProxyHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 				"ua":          request.UserAgent(),
 				"remote":      clientIP,
 				"referer":     request.Referer(),
-				"status_code": targetResponse.StatusCode,
+				"status_code": statusCode,
+				"upgrade":     isUpgradeRequest,
 			}).Errorf("proxy handler panic: %v", err)
 		}
 	}()
 
 	userAuthInfo, err := ph.option.AuthHandler(request)
 	if err != nil {
-		targetResponse.StatusCode = http.StatusSeeOther
+		if !isUpgradeRequest {
+			targetResponse.StatusCode = http.StatusSeeOther
+		}
 		http.Redirect(writer, request, "/secure-proxy/auth", http.StatusSeeOther)
 		return
 	}
@@ -146,6 +173,10 @@ func (ph *ProxyHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 	// Exclude static resources from logging
 	if ph.option.config.Verbose || !str.HasSuffixes(request.URL.Path, []string{".js", ".css", ".jpeg", ".bmp", ".jpg", ".png", ".gif", ".svg", ".font", ".ico", ".woff2", ".ttf"}) {
 		defer func() {
+			statusCode := 0
+			if targetResponse != nil {
+				statusCode = targetResponse.StatusCode
+			}
 			ph.logger.WithFields(log.Fields{
 				"elapse":      time.Since(startTs).Seconds(),
 				"host":        host,
@@ -154,8 +185,9 @@ func (ph *ProxyHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 				"ua":          request.UserAgent(),
 				"remote":      clientIP,
 				"referer":     request.Referer(),
-				"status_code": targetResponse.StatusCode,
+				"status_code": statusCode,
 				"auth":        userAuthInfo,
+				"upgrade":     isUpgradeRequest,
 			}).Debugf("request")
 		}()
 	}
@@ -163,7 +195,9 @@ func (ph *ProxyHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 	// Check if user has permission to access backend service
 	backend, ok := ph.option.backends[request.Host]
 	if !ok || !backend.HasPrivilege(userAuthInfo) {
-		targetResponse.StatusCode = http.StatusForbidden
+		if !isUpgradeRequest {
+			targetResponse.StatusCode = http.StatusForbidden
+		}
 
 		writer.Header().Set("Content-Type", "text/html; charset=utf-8")
 		writer.WriteHeader(http.StatusForbidden)
@@ -180,7 +214,9 @@ func (ph *ProxyHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 	// Get reverse proxy backend service
 	rp, ok := ph.reverseProxies[request.Host]
 	if !ok {
-		targetResponse.StatusCode = http.StatusBadRequest
+		if !isUpgradeRequest {
+			targetResponse.StatusCode = http.StatusBadRequest
+		}
 
 		writer.Header().Set("Content-Type", "text/html; charset=utf-8")
 		writer.WriteHeader(http.StatusBadRequest)
@@ -190,13 +226,20 @@ func (ph *ProxyHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 	}
 
 	request.Header.Set(AccountHostHeader, userAuthInfo.Account)
-	requestBody := ExtractBodyFromRequest(request)
 
 	ctx, cancel := context.WithTimeout(context.Background(), ph.requestTimeout)
 	defer cancel()
 
-	rp.ServeHTTP(targetResponse, request.WithContext(ctx))
+	if isUpgradeRequest {
+		// For upgrade requests (like WebSocket), use the original writer directly
+		// to support hijacking - we've already verified it supports hijacking above
+		rp.ServeHTTP(writer, request.WithContext(ctx))
+		return
+	}
 
+	// For regular HTTP requests, use our custom ResponseWriter for buffering
+	requestBody := ExtractBodyFromRequest(request)
+	rp.ServeHTTP(targetResponse, request.WithContext(ctx))
 	request.Body = ioutil.NopCloser(bytes.NewBuffer(requestBody))
 
 	body := targetResponse.body.Bytes()
