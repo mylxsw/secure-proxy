@@ -32,7 +32,7 @@ var loginPage = `
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>统一身份认证 - 登录</title>
+    <title>Unified Authentication - Login</title>
 
     <link href="/secure-proxy/assets/css/bootstrap.min.css" rel="stylesheet">
 
@@ -58,7 +58,7 @@ var loginPage = `
     
 <main class="form-signin">
   <form action="/secure-proxy/auth/login" method="POST" autocomplete="off">
-    <h1 class="h3 mb-3 fw-normal">统一身份认证</h1>
+    <h1 class="h3 mb-3 fw-normal">Unified Authentication</h1>
     
     {{- if ne .error "" }}
     <div class="alert alert-danger" role="alert">{{ .error }}</div>
@@ -67,24 +67,24 @@ var loginPage = `
     {{- if eq .auth "ldap_local" }}
     <div class="form-floating">
       <select class="form-control" name="k0" id="k0">
-        <option value="ldap" {{ if eq .k0 "ldap" }}selected{{ end }}>内部员工</option>
-        <option value="local" {{ if eq .k0 "local" }}selected{{ end }}>外部用户</option>
+        <option value="ldap" {{ if eq .k0 "ldap" }}selected{{ end }}>Internal Staff</option>
+        <option value="local" {{ if eq .k0 "local" }}selected{{ end }}>External User</option>
       </select>
-      <label for="k0">账号类型</label>
+      <label for="k0">Account Type</label>
     </div>
     {{- end }}
 
     <div class="form-floating mt-3">
       <input type="text" class="form-control" id="floatingInput" name="username" value="{{ or .username "" }}" autocomplete="off" placeholder="">
-      <label for="floatingInput">账号</label>
+      <label for="floatingInput">Account</label>
     </div>
 
     <div class="form-floating mt-3">
       <input type="password" class="form-control" id="floatingPassword" name="password" autocomplete="new-password">
-      <label for="floatingPassword">密码</label>
+      <label for="floatingPassword">Password</label>
     </div>
 
-    <button class="w-100 btn btn-lg btn-primary" type="submit">登录</button>
+    <button class="w-100 btn btn-lg btn-primary" type="submit">Login</button>
     <p class="mt-5 mb-3 text-muted">&copy; 2022</p>
   </form>
 </main>

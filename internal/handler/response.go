@@ -7,7 +7,8 @@ import (
 	"time"
 )
 
-// ResponseWriter http.ResponseWriter 实现，用于存储代理请求返回数据，避免直接发送给客户端
+// ResponseWriter implements http.ResponseWriter interface to store proxy response data,
+// avoiding direct transmission to client
 type ResponseWriter struct {
 	Headers    http.Header
 	body       *bytes.Buffer
@@ -16,22 +17,22 @@ type ResponseWriter struct {
 	CreatedAt  time.Time
 }
 
-// Header 实现 http.ResponseWriter 接口
+// Header implements http.ResponseWriter interface
 func (rw *ResponseWriter) Header() http.Header {
 	return rw.Headers
 }
 
-// Write 实现 http.ResponseWriter 接口
+// Write implements http.ResponseWriter interface
 func (rw *ResponseWriter) Write(bytes []byte) (int, error) {
 	return rw.body.Write(bytes)
 }
 
-// WriteHeader 实现 http.ResponseWriter 接口
+// WriteHeader implements http.ResponseWriter interface
 func (rw *ResponseWriter) WriteHeader(statusCode int) {
 	rw.StatusCode = statusCode
 }
 
-// Serialize 序列化为 Json
+// Serialize converts the response to JSON
 func (rw *ResponseWriter) Serialize() []byte {
 	if rw.Body == nil && rw.body != nil {
 		rw.Body = rw.body.Bytes()
@@ -41,7 +42,7 @@ func (rw *ResponseWriter) Serialize() []byte {
 	return data
 }
 
-// UnSerialize 从 Json 反序列化
+// UnSerialize deserializes from JSON
 func (rw *ResponseWriter) UnSerialize(data []byte) error {
 	if err := json.Unmarshal(data, rw); err != nil {
 		return err

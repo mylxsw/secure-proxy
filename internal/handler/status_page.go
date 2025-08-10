@@ -30,7 +30,7 @@ var statusPage = `<!doctype html>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>统一身份认证 - 状态</title>
+    <title>Unified Authentication - Status</title>
 
     <link href="/secure-proxy/assets/css/bootstrap.min.css" rel="stylesheet">
 
@@ -56,17 +56,17 @@ var statusPage = `<!doctype html>
     
   <main class="form-signin">
 	<div class="card card-default">
-		<div class="card-header">状态</div>
+		<div class="card-header">Status</div>
 		<div class="card-body text-left">
-			<p>当前登录信息：</p>
-			<li>用户：<b>{{ .Account }}({{ .Name }})</b></li>
-			<li>登录时间：<b>{{ .CreatedAt }}</b></li>
-			<li>用户组：
+			<p>Current Login Information:</p>
+			<li>User: <b>{{ .Account }}({{ .Name }})</b></li>
+			<li>Login Time: <b>{{ .CreatedAt }}</b></li>
+			<li>User Groups:
 			{{- range $i, $group := .Groups }}
 			<span class="badge rounded-pill bg-success">{{ $group }}</span>
 			{{- end }}
 			</li>
-			<p class="mt-2"><a href="/secure-proxy/auth/logout" class="btn btn-primary">退出</a></p>
+			<p class="mt-2"><a href="/secure-proxy/auth/logout" class="btn btn-primary">Logout</a></p>
 		</div>
 		<p class="mt-1 mb-3 text-muted">© 2022</p>
 	</div>

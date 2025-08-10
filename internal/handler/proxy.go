@@ -25,7 +25,7 @@ const (
 	AccountHostHeader  = "x-secure-proxy-account"
 )
 
-// ProxyHandler 代理请求处理器
+// ProxyHandler handles proxy requests
 type ProxyHandler struct {
 	requestTimeout time.Duration
 	logger         log.Logger
@@ -34,7 +34,7 @@ type ProxyHandler struct {
 	reverseProxies map[string]*httputil.ReverseProxy
 }
 
-// ProxyOptions 代理配置选项
+// ProxyOptions defines proxy configuration options
 type ProxyOptions struct {
 	config      *config.Config
 	backends    map[string]config.Backend
@@ -43,7 +43,7 @@ type ProxyOptions struct {
 	AuthHandler func(req *http.Request) (*config.UserAuthInfo, error)
 }
 
-// DefaultOptions 默认代理配置选项
+// DefaultOptions returns default proxy configuration options
 func DefaultOptions(conf *config.Config) *ProxyOptions {
 	backendsMap := make(map[string]config.Backend)
 	for _, backend := range conf.Backends {
@@ -58,7 +58,7 @@ func DefaultOptions(conf *config.Config) *ProxyOptions {
 	}
 }
 
-// NewProxyHandler 创建一个代理请求处理器
+// NewProxyHandler creates a new proxy request handler
 func NewProxyHandler(option *ProxyOptions, author auth.Auth, logger log.Logger) *ProxyHandler {
 	reverseProxies := make(map[string]*httputil.ReverseProxy)
 	for _, backend := range option.backends {
@@ -100,7 +100,7 @@ func (ph *ProxyHandler) RegisterHandlers() {
 	http.Handle("/", ph)
 }
 
-// ServeHTTP 请求处理
+// ServeHTTP handles HTTP requests
 func (ph *ProxyHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	startTs := time.Now()
 
@@ -114,7 +114,7 @@ func (ph *ProxyHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 
 	var clientIP string
 	if ph.option.config.ClientRealIPHeader != "" {
-		// 如从请求头 X-Forwarded-For 中获取真实 IP，列表中第一个 IP 为真实的客户端 IP 地址
+		// Get real IP from X-Forwarded-For header, first IP is the real client IP
 		clientIP = strings.Split(request.Header.Get(ph.option.config.ClientRealIPHeader), ",")[0]
 	}
 	if clientIP == "" {
@@ -143,7 +143,7 @@ func (ph *ProxyHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	// 排除掉静态资源，不记录日志
+	// Exclude static resources from logging
 	if ph.option.config.Verbose || !str.HasSuffixes(request.URL.Path, []string{".js", ".css", ".jpeg", ".bmp", ".jpg", ".png", ".gif", ".svg", ".font", ".ico", ".woff2", ".ttf"}) {
 		defer func() {
 			ph.logger.WithFields(log.Fields{
@@ -160,14 +160,14 @@ func (ph *ProxyHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 		}()
 	}
 
-	// 检查是否有权限访问后端服务
+	// Check if user has permission to access backend service
 	backend, ok := ph.option.backends[request.Host]
 	if !ok || !backend.HasPrivilege(userAuthInfo) {
 		targetResponse.StatusCode = http.StatusForbidden
 
 		writer.Header().Set("Content-Type", "text/html; charset=utf-8")
 		writer.WriteHeader(http.StatusForbidden)
-		_, _ = writer.Write([]byte(fmt.Sprintf("当前用户 %s 没有对域名 %s 的访问权限，请联系管理员。如管理员已经赋予相应权限，请访问 <a href='http://%s/secure-proxy'>http://%s/secure-proxy</a> 退出重新登陆后再试",
+		_, _ = writer.Write([]byte(fmt.Sprintf("User %s does not have access permission for domain %s. Please contact administrator. If permission has been granted, please visit <a href='http://%s/secure-proxy'>http://%s/secure-proxy</a> to logout and login again",
 			userAuthInfo.Name,
 			request.Host,
 			request.Host,
@@ -177,14 +177,14 @@ func (ph *ProxyHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	// 获取被反向代理的后端服务
+	// Get reverse proxy backend service
 	rp, ok := ph.reverseProxies[request.Host]
 	if !ok {
 		targetResponse.StatusCode = http.StatusBadRequest
 
 		writer.Header().Set("Content-Type", "text/html; charset=utf-8")
 		writer.WriteHeader(http.StatusBadRequest)
-		_, _ = writer.Write([]byte(fmt.Sprintf("当前域名 %s 不可用", request.Host)))
+		_, _ = writer.Write([]byte(fmt.Sprintf("Domain %s is not available", request.Host)))
 
 		return
 	}
@@ -214,12 +214,12 @@ func (ph *ProxyHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 	_, _ = writer.Write(body)
 }
 
-// LogWriter 用于重写http包输出的请求错误日志为标准格式
+// LogWriter rewrites HTTP package request error logs to standard format
 type LogWriter struct {
 	logger log.Logger
 }
 
-// Write 实现 io.Writer 接口
+// Write implements io.Writer interface
 func (l LogWriter) Write(p []byte) (n int, err error) {
 	l.logger.Errorf("%s", string(p)[20:])
 	return len(p), nil
