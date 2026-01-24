@@ -227,15 +227,17 @@ func (ph *ProxyHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 
 	request.Header.Set(AccountHostHeader, userAuthInfo.Account)
 
-	ctx, cancel := context.WithTimeout(context.Background(), ph.requestTimeout)
-	defer cancel()
-
 	if isUpgradeRequest {
 		// For upgrade requests (like WebSocket), use the original writer directly
 		// to support hijacking - we've already verified it supports hijacking above
-		rp.ServeHTTP(writer, request.WithContext(ctx))
+		// WebSocket connections are long-lived, don't apply timeout
+		rp.ServeHTTP(writer, request)
 		return
 	}
+
+	// Only apply timeout to regular HTTP requests
+	ctx, cancel := context.WithTimeout(context.Background(), ph.requestTimeout)
+	defer cancel()
 
 	// For regular HTTP requests, use our custom ResponseWriter for buffering
 	requestBody := ExtractBodyFromRequest(request)
