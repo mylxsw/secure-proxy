@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	stdLog "log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -60,10 +61,27 @@ func DefaultOptions(conf *config.Config) *ProxyOptions {
 
 // NewProxyHandler creates a new proxy request handler
 func NewProxyHandler(option *ProxyOptions, author auth.Auth, logger log.Logger) *ProxyHandler {
+	// Create a custom transport for WebSocket-friendly long-lived connections
+	// Based on http.DefaultTransport but with HTTP/2 disabled for WebSocket compatibility
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		ForceAttemptHTTP2:     false, // Disable HTTP/2 for WebSocket compatibility (RFC 6455 requires HTTP/1.1)
+		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   10,               // Increase from default 2 for better proxy performance
+		IdleConnTimeout:       90 * time.Second, // Default value; WebSocket connections are hijacked and bypass this
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
 	reverseProxies := make(map[string]*httputil.ReverseProxy)
 	for _, backend := range option.backends {
 		gateway, _ := url.Parse(backend.GetUpstream())
 		proxy := httputil.NewSingleHostReverseProxy(gateway)
+		proxy.Transport = transport
 		proxy.ErrorLog = stdLog.New(LogWriter{logger: logger}, "", stdLog.Flags())
 
 		originalDirector := proxy.Director
