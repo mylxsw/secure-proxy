@@ -21,8 +21,10 @@ type Config struct {
 	Users    Users     `json:"users,omitempty" yaml:"users,omitempty"`
 	Backends []Backend `json:"backends,omitempty" yaml:"backends,omitempty"`
 
-	Session Session `json:"session" yaml:"session,omitempty"`
-	LDAP    LDAP    `json:"ldap" yaml:"ldap,omitempty"`
+	Session  Session  `json:"session" yaml:"session,omitempty"`
+	LDAP     LDAP     `json:"ldap" yaml:"ldap,omitempty"`
+	Database Database `json:"database" yaml:"database,omitempty"`
+	TwoFA    TwoFA    `json:"two_fa" yaml:"two_fa,omitempty"`
 
 	Cache Cache `json:"cache" yaml:"cache"`
 }
@@ -30,6 +32,22 @@ type Config struct {
 type Cache struct {
 	Driver string `json:"driver" yaml:"driver"`
 	Redis  Redis  `json:"redis,omitempty" yaml:"redis,omitempty"`
+}
+
+// Database 数据库配置
+type Database struct {
+	Enabled         bool   `json:"enabled" yaml:"enabled"`
+	Driver          string `json:"driver" yaml:"driver"`                       // sqlite, mysql, postgres
+	DSN             string `json:"dsn" yaml:"dsn"`                             // 数据库连接字符串
+	MaxOpenConns    int    `json:"max_open_conns" yaml:"max_open_conns"`       // 最大打开连接数
+	MaxIdleConns    int    `json:"max_idle_conns" yaml:"max_idle_conns"`       // 最大空闲连接数
+	ConnMaxLifetime int    `json:"conn_max_lifetime" yaml:"conn_max_lifetime"` // 连接最大生命周期（秒）
+}
+
+// TwoFA 两阶段认证配置
+type TwoFA struct {
+	Enabled bool   `json:"enabled" yaml:"enabled"` // 是否启用两阶段认证功能
+	Issuer  string `json:"issuer" yaml:"issuer"`   // TOTP 颁发者名称（显示在 Google Authenticator 中）
 }
 
 // populateDefault 填充默认值
@@ -69,6 +87,21 @@ func (conf Config) populateDefault() Config {
 		}
 	}
 
+	// 数据库默认配置
+	if conf.Database.Enabled {
+		if conf.Database.Driver == "" {
+			conf.Database.Driver = "sqlite"
+		}
+		if conf.Database.DSN == "" && conf.Database.Driver == "sqlite" {
+			conf.Database.DSN = "./secure-proxy.db"
+		}
+	}
+
+	// 2FA 默认配置
+	if conf.TwoFA.Enabled && conf.TwoFA.Issuer == "" {
+		conf.TwoFA.Issuer = "SecureProxy"
+	}
+
 	return conf
 }
 
@@ -91,6 +124,21 @@ func (conf Config) validate() error {
 
 	if !str.In(conf.Cache.Driver, []string{"redis", "memory"}) {
 		return fmt.Errorf("invalid cache.driver: must be one of redis|memory")
+	}
+
+	// 数据库配置校验
+	if conf.Database.Enabled {
+		if !str.In(conf.Database.Driver, []string{"sqlite", "mysql", "postgres"}) {
+			return fmt.Errorf("invalid database.driver: must be one of sqlite|mysql|postgres")
+		}
+		if conf.Database.DSN == "" {
+			return fmt.Errorf("database.dsn is required when database is enabled")
+		}
+	}
+
+	// 2FA 配置校验
+	if conf.TwoFA.Enabled && !conf.Database.Enabled {
+		return fmt.Errorf("database must be enabled to use two-factor authentication")
 	}
 
 	for _, backend := range conf.Backends {

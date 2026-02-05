@@ -11,12 +11,13 @@ type UserAuthInfo struct {
 	// Username 用户登录标识
 	Username string `json:"username"`
 	// Account 用户实际的账号唯一标识，非登录标识
-	Account   string    `json:"account"`
-	UUID      string    `json:"uuid"`
-	Name      string    `json:"name"`
-	Groups    []string  `json:"groups"`
-	LoginHost string    `json:"login_host"`
-	CreatedAt time.Time `json:"created_at"`
+	Account      string    `json:"account"`
+	UUID         string    `json:"uuid"`
+	Name         string    `json:"name"`
+	Groups       []string  `json:"groups"`
+	LoginHost    string    `json:"login_host"`
+	CreatedAt    time.Time `json:"created_at"`
+	TwoFAPending bool      `json:"two_fa_pending"` // 是否等待两阶段认证验证
 }
 
 func (info UserAuthInfo) ID() string {
