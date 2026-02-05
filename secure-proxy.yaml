@@ -79,3 +79,24 @@ cache:
   redis:
     addr: 127.0.0.1:6379
 #    password: "111111"
+
+# 数据库配置（用于 backend 管理和 2FA）
+database:
+  enabled: false
+  # 支持的驱动：sqlite, mysql, postgres
+  driver: sqlite
+  # SQLite DSN 示例
+  dsn: "./secure-proxy.db"
+  # MySQL DSN 示例
+  # dsn: "user:password@tcp(127.0.0.1:3306)/secure_proxy?charset=utf8mb4&parseTime=True&loc=Local"
+  # PostgreSQL DSN 示例
+  # dsn: "host=127.0.0.1 port=5432 user=admin password=admin dbname=secure_proxy sslmode=disable"
+  max_open_conns: 25
+  max_idle_conns: 5
+  conn_max_lifetime: 300
+
+# 两阶段认证配置（需要启用数据库）
+two_fa:
+  enabled: false
+  # TOTP 颁发者名称（显示在 Google Authenticator 中）
+  issuer: SecureProxy

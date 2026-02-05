@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"fmt"
-	"github.com/mylxsw/secure-proxy/internal/store"
 	"net"
 	"net/http"
 	"time"
@@ -13,7 +12,11 @@ import (
 	"github.com/mylxsw/graceful"
 	"github.com/mylxsw/secure-proxy/config"
 	"github.com/mylxsw/secure-proxy/internal/auth"
+	"github.com/mylxsw/secure-proxy/internal/backend"
+	"github.com/mylxsw/secure-proxy/internal/otp"
+	"github.com/mylxsw/secure-proxy/internal/repository"
 	"github.com/mylxsw/secure-proxy/internal/secure"
+	"github.com/mylxsw/secure-proxy/internal/store"
 )
 
 type Provider struct{}
@@ -27,12 +30,49 @@ func (pro Provider) Register(binder infra.Binder) {
 }
 
 func (pro Provider) Daemon(ctx context.Context, resolver infra.Resolver) {
-	err := resolver.Resolve(func(conf *config.Config, listener net.Listener, gf graceful.Graceful, cookieManager *secure.CookieManager, s store.Store, author auth.Auth) {
+	err := resolver.Resolve(func(
+		conf *config.Config,
+		listener net.Listener,
+		gf graceful.Graceful,
+		cookieManager *secure.CookieManager,
+		s store.Store,
+		author auth.Auth,
+	) {
+		// 解析可选依赖
+		var backendStore *backend.Store
+		var totpRepo *repository.TOTPRepository
+		var backendRepo *repository.BackendRepository
+		var otpService *otp.Service
+
+		// 尝试解析数据库相关依赖
+		_ = resolver.Resolve(func(bs *backend.Store) {
+			backendStore = bs
+		})
+		_ = resolver.Resolve(func(tr *repository.TOTPRepository) {
+			totpRepo = tr
+		})
+		_ = resolver.Resolve(func(br *repository.BackendRepository) {
+			backendRepo = br
+		})
+		_ = resolver.Resolve(func(os *otp.Service) {
+			otpService = os
+		})
+
 		// 创建 HTTP server
 		options := DefaultOptions(conf)
+
+		// 如果有 backendStore，设置 BackendProvider
+		if backendStore != nil {
+			options.SetBackendProvider(backendStore)
+		}
+
 		options.AuthHandler = cookieManager.BuildAuthHandler(func(user *config.UserAuthInfo) (bool, error) {
+			// 如果用户待验证 2FA，拒绝访问
+			if user.TwoFAPending {
+				return false, fmt.Errorf("2FA verification pending")
+			}
+
 			return s.UserSessionValidate(user.ID(), func() (bool, error) {
-				// ldap_local 类型的鉴权模式下，用户名格式为 account=authType:username，后端鉴权模块会根据 authType 判断当前鉴权方式
 				account := user.Username
 				if conf.AuthType == "ldap+local" {
 					account = fmt.Sprintf("%s:%s", user.UserType, user.Username)
@@ -50,7 +90,20 @@ func (pro Provider) Daemon(ctx context.Context, resolver infra.Resolver) {
 			})
 		})
 
-		NewAuthHandler(conf, author, cookieManager, s, log.Module("auth")).RegisterHandlers()
+		// 根据配置注册不同的 AuthHandler
+		if conf.TwoFA.Enabled && otpService != nil && totpRepo != nil {
+			NewAuthHandlerWith2FA(conf, author, cookieManager, s, otpService, totpRepo, log.Module("auth")).RegisterHandlers()
+			NewTOTPHandler(conf, cookieManager, otpService, totpRepo, log.Module("totp")).RegisterHandlers()
+		} else {
+			NewAuthHandler(conf, author, cookieManager, s, log.Module("auth")).RegisterHandlers()
+		}
+
+		// 注册 Backend API 和管理页面（如果数据库启用）
+		if conf.Database.Enabled && backendRepo != nil {
+			NewBackendAPIHandler(conf, cookieManager, backendRepo, backendStore, log.Module("backend-api")).RegisterHandlers()
+			NewBackendPageHandler(conf, cookieManager, log.Module("backend-page")).RegisterHandlers()
+		}
+
 		NewProxyHandler(options, author, log.Module("proxy")).RegisterHandlers()
 
 		srv := &http.Server{}

@@ -60,6 +60,11 @@ func (sc *CookieManager) GetCookie(req *http.Request) (*config.UserAuthInfo, err
 	return &userAuthInfo, nil
 }
 
+// GetAuthUser 获取已登录用户信息（GetCookie 的别名，语义更清晰）
+func (sc *CookieManager) GetAuthUser(req *http.Request) (*config.UserAuthInfo, error) {
+	return sc.GetCookie(req)
+}
+
 func (sc *CookieManager) BuildAuthHandler(cb func(user *config.UserAuthInfo) (bool, error)) func(req *http.Request) (*config.UserAuthInfo, error) {
 	return func(req *http.Request) (*config.UserAuthInfo, error) {
 		userAuthInfo, err := sc.GetCookie(req)

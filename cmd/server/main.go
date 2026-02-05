@@ -3,7 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
+
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
+
 	"github.com/mylxsw/asteria/formatter"
 	"github.com/mylxsw/asteria/level"
 	"github.com/mylxsw/asteria/log"
@@ -14,12 +19,15 @@ import (
 	"github.com/mylxsw/secure-proxy/internal/auth/ldap"
 	"github.com/mylxsw/secure-proxy/internal/auth/ldap_local"
 	"github.com/mylxsw/secure-proxy/internal/auth/local"
+	"github.com/mylxsw/secure-proxy/internal/backend"
 	"github.com/mylxsw/secure-proxy/internal/cache/memory"
 	"github.com/mylxsw/secure-proxy/internal/cache/redis"
+	"github.com/mylxsw/secure-proxy/internal/database"
 	"github.com/mylxsw/secure-proxy/internal/handler"
+	"github.com/mylxsw/secure-proxy/internal/otp"
+	"github.com/mylxsw/secure-proxy/internal/repository"
 	"github.com/mylxsw/secure-proxy/internal/secure"
 	"github.com/mylxsw/secure-proxy/internal/store"
-	"time"
 )
 
 func main() {
@@ -50,6 +58,13 @@ func main() {
 		ldap.Provider{},
 		local.Provider{},
 		ldap_local.Provider{},
+		// 数据库相关 Provider
+		database.Provider{},
+		repository.Provider{},
+		backend.Provider{},
+		// OTP 相关 Provider
+		otp.Provider{},
+		// HTTP Handler Provider
 		handler.Provider{},
 	)
 

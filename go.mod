@@ -1,6 +1,8 @@
 module github.com/mylxsw/secure-proxy
 
-go 1.17
+go 1.21
+
+toolchain go1.24.7
 
 require (
 	github.com/go-ldap/ldap/v3 v3.4.1
@@ -16,6 +18,8 @@ require (
 
 require (
 	github.com/go-redis/redis/v8 v8.11.4
+	github.com/lib/pq v1.11.1
+	github.com/mattn/go-sqlite3 v1.14.33
 	github.com/mylxsw/glacier v0.0.0-20220215025028-3e36f8183255
 	github.com/mylxsw/go-utils v0.0.0-20210720060419-1aac8fb9b538
 	github.com/urfave/cli v1.22.5

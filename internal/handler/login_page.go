@@ -4,25 +4,31 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/mylxsw/secure-proxy/config"
 	"github.com/mylxsw/secure-proxy/internal/template"
 )
 
 func (handler *AuthHandler) buildIndexPageHandler() func(rw http.ResponseWriter, r *http.Request) {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		_ = r.ParseForm()
+		renderLoginPage(rw, r, handler.conf)
+	}
+}
 
-		values := make(map[string]string)
-		values["auth"] = handler.conf.AuthType
-		for _, k := range []string{"k0", "username", "password", "error"} {
-			values[k] = r.Form.Get(k)
-		}
+// renderLoginPage 渲染登录页面
+func renderLoginPage(rw http.ResponseWriter, r *http.Request, conf *config.Config) {
+	_ = r.ParseForm()
 
-		rw.Header().Add("Content-Type", "text/html")
-		if err := template.Render(loginPage, rw, values); err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			_, _ = rw.Write([]byte(fmt.Sprintf("Internal Server Error: %v", err)))
-			return
-		}
+	values := make(map[string]string)
+	values["auth"] = conf.AuthType
+	for _, k := range []string{"k0", "username", "password", "error"} {
+		values[k] = r.Form.Get(k)
+	}
+
+	rw.Header().Add("Content-Type", "text/html")
+	if err := template.Render(loginPage, rw, values); err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		_, _ = rw.Write([]byte(fmt.Sprintf("Internal Server Error: %v", err)))
+		return
 	}
 }
 
