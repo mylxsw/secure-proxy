@@ -24,6 +24,11 @@ func (handler *AuthHandler) buildStatusHandler() func(rw http.ResponseWriter, r 
 
 // renderStatusPage 渲染状态页面
 func renderStatusPage(rw http.ResponseWriter, userAuthInfo *config.UserAuthInfo, twoFAEnabled bool) {
+	renderStatusPageFull(rw, userAuthInfo, twoFAEnabled, false)
+}
+
+// renderStatusPageFull 渲染状态页面（完整参数）
+func renderStatusPageFull(rw http.ResponseWriter, userAuthInfo *config.UserAuthInfo, twoFAEnabled bool, dbEnabled bool) {
 	rw.Header().Add("Content-Type", "text/html")
 
 	data := map[string]interface{}{
@@ -32,6 +37,7 @@ func renderStatusPage(rw http.ResponseWriter, userAuthInfo *config.UserAuthInfo,
 		"CreatedAt":    userAuthInfo.CreatedAt,
 		"Groups":       userAuthInfo.Groups,
 		"TwoFAEnabled": twoFAEnabled,
+		"DBEnabled":    dbEnabled,
 	}
 
 	templateStr := statusPage
@@ -162,7 +168,12 @@ var statusPageWith2FA = `<!doctype html>
 				<div id="2fa-actions"></div>
 			</div>
 
-			<p class="mt-3"><a href="/secure-proxy/auth/logout" class="btn btn-primary">Logout</a></p>
+			<div class="mt-3">
+				<a href="/secure-proxy/auth/logout" class="btn btn-primary">Logout</a>
+				{{ if .DBEnabled }}
+				<a href="/secure-proxy/admin/backends" class="btn btn-outline-secondary ms-2">Backend Management</a>
+				{{ end }}
+			</div>
 		</div>
 		<p class="mt-1 mb-3 text-muted">© 2022</p>
 	</div>

@@ -37,9 +37,9 @@ func (s *Service) GenerateProvisioningURI(account, secret string) string {
 	return totp.ProvisioningUri(account, s.issuer)
 }
 
-// getCurrentTimestamp 获取当前 TOTP 时间步
-func getCurrentTimestamp() int {
-	return int(time.Now().Unix() / totpInterval)
+// getCurrentUnixTimestamp 获取当前 Unix 时间戳
+func getCurrentUnixTimestamp() int {
+	return int(time.Now().Unix())
 }
 
 // Verify 验证 TOTP 验证码
@@ -48,7 +48,7 @@ func (s *Service) Verify(secret, code string) bool {
 	code = strings.ReplaceAll(code, " ", "")
 
 	totp := gotp.NewDefaultTOTP(secret)
-	return totp.Verify(code, getCurrentTimestamp())
+	return totp.Verify(code, getCurrentUnixTimestamp())
 }
 
 // VerifyWithWindow 验证 TOTP 验证码（带时间窗口容差）
@@ -58,21 +58,21 @@ func (s *Service) VerifyWithWindow(secret, code string, window int) bool {
 	code = strings.ReplaceAll(code, " ", "")
 
 	totp := gotp.NewDefaultTOTP(secret)
-	timestamp := getCurrentTimestamp()
+	timestamp := getCurrentUnixTimestamp()
 
 	// 检查当前时间步
 	if totp.Verify(code, timestamp) {
 		return true
 	}
 
-	// 检查时间窗口内的其他时间步
+	// 检查时间窗口内的其他时间步（每个时间步为 30 秒）
 	for i := 1; i <= window; i++ {
 		// 检查前面的时间步
-		if totp.Verify(code, timestamp-i) {
+		if totp.Verify(code, timestamp-i*totpInterval) {
 			return true
 		}
 		// 检查后面的时间步
-		if totp.Verify(code, timestamp+i) {
+		if totp.Verify(code, timestamp+i*totpInterval) {
 			return true
 		}
 	}

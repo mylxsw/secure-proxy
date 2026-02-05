@@ -318,5 +318,5 @@ func (h *AuthHandlerWith2FA) renderLoginPage(rw http.ResponseWriter, r *http.Req
 }
 
 func (h *AuthHandlerWith2FA) renderStatusPage(rw http.ResponseWriter, userAuthInfo *config.UserAuthInfo) {
-	renderStatusPage(rw, userAuthInfo, h.conf.TwoFA.Enabled)
+	renderStatusPageFull(rw, userAuthInfo, h.conf.TwoFA.Enabled, h.conf.Database.Enabled)
 }

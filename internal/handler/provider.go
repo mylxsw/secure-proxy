@@ -98,9 +98,10 @@ func (pro Provider) Daemon(ctx context.Context, resolver infra.Resolver) {
 			NewAuthHandler(conf, author, cookieManager, s, log.Module("auth")).RegisterHandlers()
 		}
 
-		// 注册 Backend API（如果数据库启用）
+		// 注册 Backend API 和管理页面（如果数据库启用）
 		if conf.Database.Enabled && backendRepo != nil {
 			NewBackendAPIHandler(conf, cookieManager, backendRepo, backendStore, log.Module("backend-api")).RegisterHandlers()
+			NewBackendPageHandler(conf, cookieManager, log.Module("backend-page")).RegisterHandlers()
 		}
 
 		NewProxyHandler(options, author, log.Module("proxy")).RegisterHandlers()
